@@ -68,24 +68,9 @@ public class TcpServer {
     }
 
     private void handleRead(SelectionKey key) throws Exception {
-        SocketChannel socketChannel = (SocketChannel) key.channel();
-        System.out.println(cache.containsKey(key));
-        ByteBuffer byteBuffer = (ByteBuffer) key.attachment();
-        byteBuffer.clear();
-        int readbytes = socketChannel.read(byteBuffer);
-        byteBuffer.flip();
-        if (readbytes > 0) {
-            byte[] bytes = new byte[readbytes];
-            byteBuffer.get(bytes, 0, readbytes);
-            System.out.println(new String(bytes, 0, readbytes, Charset.forName("utf-8")));
-        } else if (readbytes == -1) {
-            socketChannel.close();
-            return;
-        }
-        byteBuffer.flip();
-        key.attach(byteBuffer);
-        forCast(byteBuffer);
-        key.interestOps(SelectionKey.OP_WRITE);
+        key.interestOps(0);  //禁止下一次获取读事件，在子线程中重置事件, 重置完后调用wakeup重新获取感兴趣事件
+        new Thread(new ReadHandler(key)).start();
+
     }
 
     private void forCast(ByteBuffer byteBuffer) {
